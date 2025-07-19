@@ -3,6 +3,7 @@ import { ApiResponse } from '../types';
 import conversationRoutes from '../modules/conversation/routes';
 import { conversationService } from '../modules/conversation/service';
 import { conversationValidator } from '../modules/conversation/validator';
+import { aiService } from '../modules/conversation/aiService';
 import { SaveMessageRequest } from '../modules/conversation/types';
 
 const router = Router();
@@ -54,10 +55,11 @@ router.post('/messages', async (req: Request, res: Response): Promise<void> => {
             sanitizedData.content
         );
 
-        // Cria resposta automática do Curiosity (eco da mensagem do usuário)
+        // Gera resposta do Curiosity usando OpenAI
+        const aiResponse = await aiService.generateResponse(sanitizedData.content);
         const curiosityResponse = await conversationService.addMessage(
             'Curiosity',
-            sanitizedData.content
+            aiResponse
         );
 
         const response: ApiResponse = {
