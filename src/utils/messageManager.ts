@@ -75,11 +75,23 @@ export class MessageManager {
                 throw new Error(apiResponse.error || 'Erro desconhecido na API');
             }
 
-            // Backup no localStorage em caso de falha da API
-            this.saveToLocalStorage(apiResponse.data);
+            // A API agora retorna { userMessage, curiosityResponse } ou apenas uma mensagem para compatibilidade
+            const responseData = apiResponse.data;
 
-            // Emit event for real-time updates
-            this.emitMessageSaved(apiResponse.data || message);
+            if (responseData && responseData.userMessage && responseData.curiosityResponse) {
+                // Nova estrutura com resposta do Curiosity
+                // Backup no localStorage
+                this.saveToLocalStorage(responseData.userMessage);
+                this.saveToLocalStorage(responseData.curiosityResponse);
+
+                // Emit events for both messages
+                this.emitMessageSaved(responseData.userMessage);
+                this.emitMessageSaved(responseData.curiosityResponse);
+            } else {
+                // Estrutura antiga (compatibilidade)
+                this.saveToLocalStorage(responseData || message);
+                this.emitMessageSaved(responseData || message);
+            }
 
         } catch (error) {
             console.error('Erro ao salvar mensagem via API:', error);

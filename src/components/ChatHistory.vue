@@ -81,7 +81,7 @@ const formatTime = (timestamp: string) => {
           v-for="(message, index) in messages" 
           :key="index"
           class="message-item"
-          :class="`message-${message.author}`"
+          :class="[`message-${message.author}`, message.author === 'Curiosity' ? 'message-curiosity' : '']"
         >
           <div class="message-header">
             <span class="message-author">{{ message.author }}</span>
@@ -171,6 +171,28 @@ const formatTime = (timestamp: string) => {
   background-color: #9a9a9a;
   border: 1px solid #666;
   color: #fff;
+}
+
+/* Estilos específicos para mensagens do Curiosity */
+.message-curiosity {
+  background: linear-gradient(135deg, #4a148c, #6a1b9a) !important; /* Roxo escuro com gradiente */
+  border: 1px solid #3a0b6b !important;
+  color: #fff !important;
+  margin-right: auto !important; /* Alinha à esquerda */
+  box-shadow: 0 2px 8px rgba(74, 20, 140, 0.3) !important; /* Sombra roxa sutil */
+}
+
+.message-curiosity .message-author {
+  color: #e1bee7 !important; /* Roxo claro para o nome do autor */
+  font-weight: bold !important;
+}
+
+.message-curiosity .message-time {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.message-curiosity .message-content {
+  color: #fff !important;
 }
 
 .message-header {

@@ -48,15 +48,24 @@ router.post('/messages', async (req: Request, res: Response): Promise<void> => {
         // Sanitiza os dados
         const sanitizedData = conversationValidator.sanitizeSaveMessage(req.body as SaveMessageRequest);
 
-        // Salva a mensagem
+        // Salva a mensagem do usuário
         const newMessage = await conversationService.addMessage(
             sanitizedData.author,
             sanitizedData.content
         );
 
+        // Cria resposta automática do Curiosity (eco da mensagem do usuário)
+        const curiosityResponse = await conversationService.addMessage(
+            'Curiosity',
+            sanitizedData.content
+        );
+
         const response: ApiResponse = {
             success: true,
-            data: newMessage
+            data: {
+                userMessage: newMessage,
+                curiosityResponse: curiosityResponse
+            }
         };
         res.status(201).json(response);
     } catch (error) {
