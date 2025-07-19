@@ -1,71 +1,27 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import { MessageManager } from '../utils/messageManager'
+import { ref, onMounted, nextTick } from 'vue'
+import { useMessages } from '../composables/useMessages'
 import type { Message } from '../types/api'
 
 defineProps<{ msg: string }>()
 
-const messages = ref<Message[]>([])
 const messagesContainer = ref<HTMLElement | null>(null)
-let unsubscribeFromMessages: (() => void) | null = null
 
-const scrollToBottom = async () => {
+// Usando o composable para gerenciar mensagens
+const { 
+  messages, 
+  isLoading, 
+  error, 
+  initializeMessages, 
+  retryLoad 
+} = useMessages()
+
+onMounted(async () => {
+  // Aguarda o próximo tick para garantir que o DOM está montado
   await nextTick()
-  if (messagesContainer.value) {
-    messagesContainer.value.scrollTo({
-      top: messagesContainer.value.scrollHeight,
-      behavior: 'smooth'
-    })
-  }
-}
-
-const loadMessages = async () => {
-  try {
-    messages.value = await MessageManager.getAllMessages()
-    // Scroll to bottom after loading messages
-    scrollToBottom()
-  } catch (error) {
-    console.error('Erro ao carregar mensagens:', error)
-  }
-}
-
-const addMessageToList = async (message: Message) => {
-  // Check if message already exists to avoid duplicates
-  const exists = messages.value.some(m => 
-    m.content === message.content && 
-    m.author === message.author && 
-    Math.abs(new Date(m.timestamp).getTime() - new Date(message.timestamp).getTime()) < 1000
-  )
   
-  if (!exists) {
-    messages.value.push(message)
-    // Scroll to bottom after adding new message
-    scrollToBottom()
-  }
-}
-
-onMounted(() => {
-  // Load initial messages
-  loadMessages()
-  
-  // Subscribe to real-time updates
-  unsubscribeFromMessages = MessageManager.onMessageSaved(addMessageToList)
-  
-  // Periodically sync with server (less frequently now - every 30 seconds)
-  // This serves as a backup to ensure we don't miss any messages
-  const syncInterval = setInterval(loadMessages, 30000)
-  
-  // Store cleanup function
-  onUnmounted(() => {
-    clearInterval(syncInterval)
-  })
-})
-
-onUnmounted(() => {
-  // Cleanup event subscription
-  if (unsubscribeFromMessages) {
-    unsubscribeFromMessages()
-  }
+  // Inicializa mensagens com função que retorna o container para scroll automático
+  await initializeMessages(() => messagesContainer.value)
 })
 
 const formatTime = (timestamp: string) => {
@@ -75,12 +31,25 @@ const formatTime = (timestamp: string) => {
 
 <template>
   <div class="chat-history-container">
+    <!-- Estado de carregamento -->
+    <div v-if="isLoading && messages.length === 0" class="loading-state">
+      <p>Carregando mensagens...</p>
+    </div>
     
-    <div v-if="messages.length > 0" class="messages-container">
+    <!-- Estado de erro -->
+    <div v-else-if="error" class="error-state">
+      <p>{{ error }}</p>
+      <button @click="retryLoad" class="retry-button">
+        Tentar Novamente
+      </button>
+    </div>
+    
+    <!-- Mensagens -->
+    <div v-else-if="messages.length > 0" class="messages-container">
       <div class="messages-list" ref="messagesContainer">
         <div 
           v-for="(message, index) in messages" 
-          :key="index"
+          :key="`${message.author}-${index}-${message.timestamp}`"
           class="message-item"
           :class="[`message-${message.author}`, message.author === 'Curiosity' ? 'message-curiosity' : '']"
         >
@@ -93,6 +62,7 @@ const formatTime = (timestamp: string) => {
       </div>
     </div>
     
+    <!-- Estado vazio -->
     <div v-else class="no-messages">
       <p>Nenhuma mensagem salva ainda. Use o campo abaixo para enviar sua primeira mensagem!</p>
     </div>
@@ -104,9 +74,54 @@ const formatTime = (timestamp: string) => {
   margin-bottom: 20px;
   display: flex;
   flex-direction: column;
-  height: 60vh; /* Altura responsiva baseada na viewport */
-  min-height: 400px; /* Altura mínima para telas pequenas */
-  max-height: 600px; /* Altura máxima para telas grandes */
+  height: 60vh;
+  min-height: 400px;
+  max-height: 600px;
+}
+
+.loading-state,
+.error-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background-color: #7a7a7a;
+}
+
+.loading-state p {
+  color: #ccc;
+  font-style: italic;
+  margin: 0;
+}
+
+.error-state p {
+  color: #ff6b6b;
+  margin-bottom: 16px;
+}
+
+.retry-button {
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.retry-button:hover {
+  background-color: #0056b3;
+}
+
+.retry-button:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
 }
 
 .messages-container {
@@ -116,23 +131,16 @@ const formatTime = (timestamp: string) => {
   overflow: hidden;
 }
 
-.messages-container h2 {
-  color: #333;
-  margin-bottom: 15px;
-  font-size: 1.2em;
-  flex-shrink: 0; /* Não encolhe */
-}
-
 .messages-list {
-  flex: 1; /* Ocupa todo o espaço disponível */
+  flex: 1;
   overflow-y: auto;
   border: 1px solid #555;
   border-radius: 8px;
   padding: 10px;
-  background-color: #7a7a7a; /* Cinza escuro */
+  background-color: #7a7a7a;
   display: flex;
   flex-direction: column;
-  gap: 12px; /* Espaçamento consistente entre mensagens */
+  gap: 12px;
 }
 
 .message-item {
@@ -140,17 +148,17 @@ const formatTime = (timestamp: string) => {
   border-radius: 8px;
   background-color: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  flex-shrink: 0; /* Não encolhe as mensagens */
-  max-width: 80%; /* Largura máxima para criar bolhas de chat */
-  word-wrap: break-word; /* Quebra palavras longas */
+  flex-shrink: 0;
+  max-width: 80%;
+  word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
 .message-user {
-  background-color: #1a1d1a; /* Preto com leve tom esverdeado */
+  background-color: #1a1d1a;
   color: white;
-  margin-left: auto; /* Alinha à direita */
-  border-radius: 18px 18px 4px 18px; /* Formato de bolha de chat */
+  margin-left: auto;
+  border-radius: 18px 18px 4px 18px;
 }
 
 .message-user .message-author {
@@ -165,26 +173,24 @@ const formatTime = (timestamp: string) => {
   color: white;
 }
 
-/* Estilos para mensagens de outros autores */
 .message-item:not(.message-user) {
-  margin-right: auto; /* Alinha à esquerda */
-  border-radius: 18px 18px 18px 4px; /* Formato de bolha de chat */
+  margin-right: auto;
+  border-radius: 18px 18px 18px 4px;
   background-color: #9a9a9a;
   border: 1px solid #666;
   color: #fff;
 }
 
-/* Estilos específicos para mensagens do Curiosity */
 .message-curiosity {
-  background: linear-gradient(135deg, #4a148c, #6a1b9a) !important; /* Roxo escuro com gradiente */
+  background: linear-gradient(135deg, #4a148c, #6a1b9a) !important;
   border: 1px solid #3a0b6b !important;
   color: #fff !important;
-  margin-right: auto !important; /* Alinha à esquerda */
-  box-shadow: 0 2px 8px rgba(74, 20, 140, 0.3) !important; /* Sombra roxa sutil */
+  margin-right: auto !important;
+  box-shadow: 0 2px 8px rgba(74, 20, 140, 0.3) !important;
 }
 
 .message-curiosity .message-author {
-  color: #e1bee7 !important; /* Roxo claro para o nome do autor */
+  color: #e1bee7 !important;
   font-weight: bold !important;
 }
 
@@ -223,9 +229,9 @@ const formatTime = (timestamp: string) => {
   color: #333;
   line-height: 1.4;
   word-break: break-word;
-  white-space: pre-wrap; /* Preserva quebras de linha */
-  max-height: 150px; /* Altura máxima para mensagens muito longas */
-  overflow-y: auto; /* Scroll se necessário */
+  white-space: pre-wrap;
+  max-height: 150px;
+  overflow-y: auto;
 }
 
 .no-messages {
@@ -239,7 +245,7 @@ const formatTime = (timestamp: string) => {
   font-style: italic;
   border: 1px solid #555;
   border-radius: 8px;
-  background-color: #7a7a7a; /* Cinza escuro */
+  background-color: #7a7a7a;
 }
 
 .no-messages p {
@@ -262,7 +268,7 @@ const formatTime = (timestamp: string) => {
   
   .message-item {
     padding: 10px;
-    max-width: 85%; /* Aumenta um pouco a largura em tablets */
+    max-width: 85%;
   }
   
   .message-content {
@@ -278,7 +284,7 @@ const formatTime = (timestamp: string) => {
   }
   
   .message-item {
-    max-width: 90%; /* Largura maior em mobile */
+    max-width: 90%;
     padding: 8px;
   }
   

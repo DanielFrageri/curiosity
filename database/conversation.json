@@ -139,6 +139,26 @@
       "author": "Curiosity",
       "content": "Oii! Eu sou a Curiosity, uma inteligência artificial criada para ajudar a responder perguntas e fornecer informações sobre uma variedade de tópicos. Como posso ajudar você hoje?",
       "timestamp": "2025-07-19T22:59:31.134Z"
+    },
+    {
+      "author": "user",
+      "content": "Qual a capital de paris?",
+      "timestamp": "2025-07-19T23:06:31.621Z"
+    },
+    {
+      "author": "Curiosity",
+      "content": "Paris é a capital da França. Se você está se referindo a algum outro conceito ou contexto, por favor, forneça mais detalhes.",
+      "timestamp": "2025-07-19T23:06:34.117Z"
+    },
+    {
+      "author": "user",
+      "content": "Voce sabia que você já foi um echo chat? Agora você é inteligente, mas ainda não tem memória",
+      "timestamp": "2025-07-19T23:10:08.094Z"
+    },
+    {
+      "author": "Curiosity",
+      "content": "Interessante! A evolução de tecnologias como eu realmente é fascinante. Hoje, mesmo sem memória, posso entender e responder a uma ampla gama de perguntas. Se você tiver algo específico em mente, fique à vontade para perguntar!",
+      "timestamp": "2025-07-19T23:10:09.592Z"
     }
   ]
 }
