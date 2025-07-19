@@ -1,22 +1,7 @@
-export interface Message {
-    author: string;
-    content: string;
-    timestamp: string;
-}
+import type { Message, SaveMessageRequest, ApiResponse } from '../types/api';
 
 export interface ConversationData {
     messages: Message[];
-}
-
-export interface ApiResponse<T = any> {
-    success: boolean;
-    data?: T;
-    error?: string;
-}
-
-export interface SaveMessageRequest {
-    author: string;
-    content: string;
 }
 
 // Event system for real-time updates

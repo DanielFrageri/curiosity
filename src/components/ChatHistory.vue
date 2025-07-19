@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import { MessageManager, type Message } from '../utils/messageManager'
+import { MessageManager } from '../utils/messageManager'
+import type { Message } from '../types/api'
 
 defineProps<{ msg: string }>()
 
@@ -248,9 +249,9 @@ const formatTime = (timestamp: string) => {
 /* Media queries para responsividade */
 @media (max-width: 768px) {
   .chat-history-container {
-    height: 50vh;
+    height: 60vh;
     min-height: 300px;
-    max-height: 400px;
+    max-height: 500px;
   }
   
   .message-header {

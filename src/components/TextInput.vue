@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { MessageManager, type Message } from '../utils/messageManager'
+import { MessageManager } from '../utils/messageManager'
+import type { Message } from '../types/api'
 
 const inputText = ref('')
 const isLoading = ref(false)
