@@ -1,0 +1,39 @@
+{
+  "messages": [
+    {
+      "author": "user",
+      "content": "Agora",
+      "timestamp": "2025-07-19T19:53:59.616Z"
+    },
+    {
+      "author": "user",
+      "content": "Ta demorando",
+      "timestamp": "2025-07-19T19:54:05.814Z"
+    },
+    {
+      "author": "user",
+      "content": "6 segundos?",
+      "timestamp": "2025-07-19T19:55:46.102Z"
+    },
+    {
+      "author": "user",
+      "content": "Acho que sim",
+      "timestamp": "2025-07-19T19:56:10.217Z"
+    },
+    {
+      "author": "user",
+      "content": "O texto ta centralizado, terei que mudar isso. To mandando um texto mais longo pra ver como que vai se comportar agora",
+      "timestamp": "2025-07-19T19:57:51.232Z"
+    },
+    {
+      "author": "user",
+      "content": "O texto ta centralizado, terei que mudar isso. To mandando um texto mais longo pra ver como que vai se comportar agora. Será que vai continuar aumentando o tamanho da grossura da coluna de mensagens de forma indefinida ou vai quebrar uma linha?",
+      "timestamp": "2025-07-19T19:58:25.524Z"
+    },
+    {
+      "author": "user",
+      "content": "Ok, quebrou uma linha",
+      "timestamp": "2025-07-19T19:58:37.011Z"
+    }
+  ]
+}

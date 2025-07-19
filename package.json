@@ -1,0 +1,25 @@
+{
+  "name": "curiosity",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:api": "cd api && npm run dev",
+    "dev:full": "concurrently \"npm run dev:api\" \"npm run dev\"",
+    "build": "vue-tsc -b && vite build",
+    "build:api": "cd api && npm run build",
+    "preview": "vite preview",
+    "start:api": "cd api && npm start"
+  },
+  "dependencies": {
+    "vue": "^3.4.29"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.5",
+    "concurrently": "^8.2.2",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.4",
+    "vue-tsc": "^2.0.24"
+  }
+}
