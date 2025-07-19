@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { conversationService } from './service';
 import { conversationValidator } from './validator';
+import { aiService } from './aiService';
 import { ApiResponse } from '../../types';
 import { SaveMessageRequest } from './types';
 
@@ -54,10 +55,13 @@ router.post('/messages', async (req: Request, res: Response): Promise<void> => {
             sanitizedData.content
         );
 
-        // Cria resposta automática do Curiosity (eco da mensagem do usuário)
+        // Gera resposta do Curiosity usando OpenAI
+        const aiResponse = await aiService.generateResponse(sanitizedData.content);
+
+        console.log('aiResponse', aiResponse);
         const curiosityResponse = await conversationService.addMessage(
             'Curiosity',
-            sanitizedData.content
+            aiResponse
         );
 
         const response: ApiResponse = {
