@@ -19,9 +19,35 @@ export interface SaveMessageRequest {
     content: string;
 }
 
+// Event system for real-time updates
+type MessageEventHandler = (message: Message) => void;
+
 export class MessageManager {
     private static readonly API_BASE_URL = 'http://localhost:3001/api';
     private static readonly STORAGE_KEY = 'conversation_data_backup';
+    private static eventHandlers: MessageEventHandler[] = [];
+
+    // Event system methods
+    static onMessageSaved(handler: MessageEventHandler): () => void {
+        this.eventHandlers.push(handler);
+        // Return unsubscribe function
+        return () => {
+            const index = this.eventHandlers.indexOf(handler);
+            if (index > -1) {
+                this.eventHandlers.splice(index, 1);
+            }
+        };
+    }
+
+    private static emitMessageSaved(message: Message): void {
+        this.eventHandlers.forEach(handler => {
+            try {
+                handler(message);
+            } catch (error) {
+                console.error('Error in message event handler:', error);
+            }
+        });
+    }
 
     // Salva mensagem via API
     static async saveMessage(message: Message): Promise<void> {
@@ -49,19 +75,27 @@ export class MessageManager {
                 throw new Error(apiResponse.error || 'Erro desconhecido na API');
             }
 
-            console.log('Mensagem salva com sucesso via API:', apiResponse.data);
-
             // Backup no localStorage em caso de falha da API
             this.saveToLocalStorage(apiResponse.data);
+
+            // Emit event for real-time updates
+            this.emitMessageSaved(apiResponse.data || message);
 
         } catch (error) {
             console.error('Erro ao salvar mensagem via API:', error);
 
             // Fallback: salva no localStorage se a API falhar
-            console.log('Tentando salvar no localStorage como fallback...');
-            await this.saveToLocalStorageFallback(message);
+            try {
+                await this.saveToLocalStorageFallback(message);
 
-            throw new Error('Falha ao conectar com o servidor. Mensagem salva localmente.');
+                // Emit event even for fallback
+                this.emitMessageSaved(message);
+
+                // Se o fallback funcionou, consideramos como sucesso - não lançamos erro
+            } catch (fallbackError) {
+                console.error('Erro no fallback para localStorage:', fallbackError);
+                throw new Error('Falha ao salvar mensagem. Tente novamente.');
+            }
         }
     }
 
@@ -86,7 +120,6 @@ export class MessageManager {
             console.error('Erro ao carregar mensagens via API:', error);
 
             // Fallback: carrega do localStorage se a API falhar
-            console.log('Carregando mensagens do localStorage como fallback...');
             return this.loadFromLocalStorage();
         }
     }
@@ -140,7 +173,6 @@ export class MessageManager {
             const existingData = this.loadFromLocalStorageRaw();
             existingData.messages.push(message);
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(existingData));
-            console.log('Mensagem salva no localStorage como fallback');
         } catch (error) {
             console.error('Erro ao salvar no localStorage:', error);
             throw error;

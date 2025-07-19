@@ -74,7 +74,6 @@ async function addMessage(author: string, content: string, filePath: string): Pr
         conversationData.messages.push(newMessage);
         await saveConversation(conversationData, filePath);
 
-        console.log(`Nova mensagem salva de ${author}:`, content);
         return newMessage;
     } catch (error) {
         console.error('Erro ao adicionar mensagem:', error);

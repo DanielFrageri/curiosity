@@ -23,6 +23,7 @@ const sendMessage = async () => {
     isLoading.value = true
     await MessageManager.saveMessage(message)
     inputText.value = '' // Limpa o input após enviar
+    
   } catch (error) {
     console.error('Erro ao salvar mensagem:', error)
     alert('Erro ao salvar mensagem. Tente novamente.')
@@ -67,16 +68,16 @@ const handleKeyPress = (event: KeyboardEvent) => {
 .text-input-container {
   margin: 20px 0;
   padding: 20px;
-  border: 1px solid #ccc;
+  border: 1px solid #555;
   border-radius: 8px;
-  background-color: #f9f9f9;
+  background-color: #7a7a7a; /* Cinza escuro */
 }
 
 .input-label {
   display: block;
   margin-bottom: 8px;
   font-weight: bold;
-  color: #333;
+  color: #fff;
 }
 
 .input-group {
@@ -88,21 +89,27 @@ const handleKeyPress = (event: KeyboardEvent) => {
 .text-input {
   flex: 1;
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid #555;
   border-radius: 4px;
   font-size: 16px;
   box-sizing: border-box;
+  background-color: #5a5a5a;
+  color: #fff;
 }
 
 .text-input:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  border-color: #1a1d1a;
+  box-shadow: 0 0 0 2px rgba(26, 29, 26, 0.25);
+}
+
+.text-input::placeholder {
+  color: #bbb;
 }
 
 .send-button {
   padding: 10px 20px;
-  background-color: #007bff;
+  background-color: #1a1d1a; /* Mesma cor das mensagens */
   color: white;
   border: none;
   border-radius: 4px;
@@ -112,7 +119,7 @@ const handleKeyPress = (event: KeyboardEvent) => {
 }
 
 .send-button:hover:not(:disabled) {
-  background-color: #0056b3;
+  background-color: #2a2d2a; /* Versão ligeiramente mais clara para hover */
 }
 
 .send-button:disabled {

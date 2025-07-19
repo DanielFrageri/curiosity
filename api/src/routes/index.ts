@@ -1,6 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { ApiResponse } from '../types';
 import conversationRoutes from '../modules/conversation/routes';
+import { conversationService } from '../modules/conversation/service';
+import { conversationValidator } from '../modules/conversation/validator';
+import { SaveMessageRequest } from '../modules/conversation/types';
 
 const router = Router();
 
@@ -28,11 +31,42 @@ router.get('/messages', (req: Request, res: Response) => {
     res.redirect(301, '/api/conversation/messages');
 });
 
-// POST /api/messages -> redireciona para /api/conversation/messages
-router.post('/messages', (req: Request, res: Response) => {
-    // Para POST não podemos fazer redirect, então chamamos o endpoint diretamente
-    req.url = '/conversation/messages';
-    conversationRoutes(req, res, () => { });
+// POST /api/messages -> implementa a mesma lógica que /api/conversation/messages
+router.post('/messages', async (req: Request, res: Response): Promise<void> => {
+    try {
+        // Validação dos dados
+        const validation = conversationValidator.validateSaveMessage(req.body);
+        if (!validation.isValid) {
+            const response: ApiResponse = {
+                success: false,
+                error: validation.error
+            };
+            res.status(400).json(response);
+            return;
+        }
+
+        // Sanitiza os dados
+        const sanitizedData = conversationValidator.sanitizeSaveMessage(req.body as SaveMessageRequest);
+
+        // Salva a mensagem
+        const newMessage = await conversationService.addMessage(
+            sanitizedData.author,
+            sanitizedData.content
+        );
+
+        const response: ApiResponse = {
+            success: true,
+            data: newMessage
+        };
+        res.status(201).json(response);
+    } catch (error) {
+        console.error('Erro ao salvar mensagem (compatibilidade):', error);
+        const response: ApiResponse = {
+            success: false,
+            error: 'Erro interno do servidor ao salvar mensagem'
+        };
+        res.status(500).json(response);
+    }
 });
 
 // GET /api/stats -> redireciona para /api/conversation/stats

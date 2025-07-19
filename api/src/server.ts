@@ -6,24 +6,16 @@ import apiRoutes from './routes';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+// Configuração do CORS
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'], // URLs do frontend Vite
+    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
     credentials: true
 }));
+
 app.use(express.json());
 
-// Rotas da API
+// Rotas
 app.use('/api', apiRoutes);
-
-// Middleware de tratamento de rotas não encontradas
-app.use('*', (req, res) => {
-    const response: ApiResponse = {
-        success: false,
-        error: `Rota ${req.originalUrl} não encontrada`
-    };
-    res.status(404).json(response);
-});
 
 // Middleware de tratamento de erros
 app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -38,12 +30,6 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
 // Inicia o servidor
 app.listen(PORT, () => {
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
-    console.log(`📝 API disponível em http://localhost:${PORT}/api`);
-    console.log(`💾 Banco de dados: database/conversation.json`);
-    console.log(`🔄 Rotas organizadas por módulos:`);
-    console.log(`   - Health: /api/health`);
-    console.log(`   - Conversation: /api/conversation/*`);
-    console.log(`   - Compatibilidade: /api/messages, /api/stats`);
 });
 
 export default app; 

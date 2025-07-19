@@ -1,23 +1,70 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { MessageManager, type Message } from '../utils/messageManager'
 
 defineProps<{ msg: string }>()
 
 const messages = ref<Message[]>([])
+const messagesContainer = ref<HTMLElement | null>(null)
+let unsubscribeFromMessages: (() => void) | null = null
+
+const scrollToBottom = async () => {
+  await nextTick()
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTo({
+      top: messagesContainer.value.scrollHeight,
+      behavior: 'smooth'
+    })
+  }
+}
 
 const loadMessages = async () => {
   try {
     messages.value = await MessageManager.getAllMessages()
+    // Scroll to bottom after loading messages
+    scrollToBottom()
   } catch (error) {
     console.error('Erro ao carregar mensagens:', error)
   }
 }
 
+const addMessageToList = async (message: Message) => {
+  // Check if message already exists to avoid duplicates
+  const exists = messages.value.some(m => 
+    m.content === message.content && 
+    m.author === message.author && 
+    Math.abs(new Date(m.timestamp).getTime() - new Date(message.timestamp).getTime()) < 1000
+  )
+  
+  if (!exists) {
+    messages.value.push(message)
+    // Scroll to bottom after adding new message
+    scrollToBottom()
+  }
+}
+
 onMounted(() => {
+  // Load initial messages
   loadMessages()
-  // Atualiza a lista a cada 3 segundos para mostrar novas mensagens
-  setInterval(loadMessages, 3000)
+  
+  // Subscribe to real-time updates
+  unsubscribeFromMessages = MessageManager.onMessageSaved(addMessageToList)
+  
+  // Periodically sync with server (less frequently now - every 30 seconds)
+  // This serves as a backup to ensure we don't miss any messages
+  const syncInterval = setInterval(loadMessages, 30000)
+  
+  // Store cleanup function
+  onUnmounted(() => {
+    clearInterval(syncInterval)
+  })
+})
+
+onUnmounted(() => {
+  // Cleanup event subscription
+  if (unsubscribeFromMessages) {
+    unsubscribeFromMessages()
+  }
 })
 
 const formatTime = (timestamp: string) => {
@@ -27,11 +74,9 @@ const formatTime = (timestamp: string) => {
 
 <template>
   <div class="chat-history-container">
-    <h1>{{ msg }}</h1>
     
     <div v-if="messages.length > 0" class="messages-container">
-      <h2>Mensagens salvas:</h2>
-      <div class="messages-list">
+      <div class="messages-list" ref="messagesContainer">
         <div 
           v-for="(message, index) in messages" 
           :key="index"
@@ -56,41 +101,76 @@ const formatTime = (timestamp: string) => {
 <style scoped>
 .chat-history-container {
   margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  height: 60vh; /* Altura responsiva baseada na viewport */
+  min-height: 400px; /* Altura mínima para telas pequenas */
+  max-height: 600px; /* Altura máxima para telas grandes */
 }
 
 .messages-container {
-  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
 }
 
 .messages-container h2 {
   color: #333;
   margin-bottom: 15px;
   font-size: 1.2em;
+  flex-shrink: 0; /* Não encolhe */
 }
 
 .messages-list {
-  max-height: 400px;
+  flex: 1; /* Ocupa todo o espaço disponível */
   overflow-y: auto;
-  border: 1px solid #ddd;
+  border: 1px solid #555;
   border-radius: 8px;
   padding: 10px;
-  background-color: #fafafa;
+  background-color: #7a7a7a; /* Cinza escuro */
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* Espaçamento consistente entre mensagens */
 }
 
 .message-item {
-  margin-bottom: 15px;
   padding: 12px;
   border-radius: 8px;
   background-color: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.message-item:last-child {
-  margin-bottom: 0;
+  flex-shrink: 0; /* Não encolhe as mensagens */
+  max-width: 80%; /* Largura máxima para criar bolhas de chat */
+  word-wrap: break-word; /* Quebra palavras longas */
+  overflow-wrap: break-word;
 }
 
 .message-user {
-  border-left: 4px solid #007bff;
+  background-color: #1a1d1a; /* Preto com leve tom esverdeado */
+  color: white;
+  margin-left: auto; /* Alinha à direita */
+  border-radius: 18px 18px 4px 18px; /* Formato de bolha de chat */
+}
+
+.message-user .message-author {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.message-user .message-time {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.message-user .message-content {
+  color: white;
+}
+
+/* Estilos para mensagens de outros autores */
+.message-item:not(.message-user) {
+  margin-right: auto; /* Alinha à esquerda */
+  border-radius: 18px 18px 18px 4px; /* Formato de bolha de chat */
+  background-color: #9a9a9a;
+  border: 1px solid #666;
+  color: #fff;
 }
 
 .message-header {
@@ -99,32 +179,104 @@ const formatTime = (timestamp: string) => {
   align-items: center;
   margin-bottom: 8px;
   font-size: 0.9em;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .message-author {
   font-weight: bold;
   color: #007bff;
   text-transform: capitalize;
+  flex-shrink: 0;
 }
 
 .message-time {
   color: #666;
   font-size: 0.85em;
+  flex-shrink: 0;
 }
 
 .message-content {
   color: #333;
   line-height: 1.4;
+  word-break: break-word;
+  white-space: pre-wrap; /* Preserva quebras de linha */
+  max-height: 150px; /* Altura máxima para mensagens muito longas */
+  overflow-y: auto; /* Scroll se necessário */
 }
 
 .no-messages {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 20px;
   text-align: center;
-  color: #666;
+  color: #ccc;
   font-style: italic;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background-color: #7a7a7a; /* Cinza escuro */
 }
 
 .no-messages p {
   margin: 0;
+}
+
+/* Media queries para responsividade */
+@media (max-width: 768px) {
+  .chat-history-container {
+    height: 50vh;
+    min-height: 300px;
+    max-height: 400px;
+  }
+  
+  .message-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .message-item {
+    padding: 10px;
+    max-width: 85%; /* Aumenta um pouco a largura em tablets */
+  }
+  
+  .message-content {
+    max-height: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chat-history-container {
+    height: 45vh;
+    min-height: 250px;
+    max-height: 350px;
+  }
+  
+  .message-item {
+    max-width: 90%; /* Largura maior em mobile */
+    padding: 8px;
+  }
+  
+  .message-content {
+    max-height: 100px;
+  }
+  
+  .messages-list {
+    padding: 8px;
+    gap: 8px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .chat-history-container {
+    height: 65vh;
+    max-height: 700px;
+  }
+  
+  .message-content {
+    max-height: 200px;
+  }
 }
 </style>
