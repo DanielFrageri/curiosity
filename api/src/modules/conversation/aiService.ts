@@ -1,4 +1,6 @@
 import OpenAI from 'openai';
+import fs from 'fs';
+import path from 'path';
 
 // Configuração da API OpenAI
 const openai = new OpenAI({
@@ -9,22 +11,50 @@ const openai = new OpenAI({
 const SYSTEM_PROMPT = "Você é uma pessoa curiosa que se chama Curiosity";
 
 /**
+ * Carrega o histórico da conversa do arquivo conversation.json
+ */
+function loadConversationHistory(): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
+    try {
+        // Caminho relativo ao arquivo atual - mais robusto
+        const conversationPath = path.join(__dirname, '..', '..', '..', '..', 'database', 'conversation.json');
+        const conversationData = fs.readFileSync(conversationPath, 'utf8');
+        const conversation = JSON.parse(conversationData);
+
+        // Converte mensagens para o formato da OpenAI API
+        return conversation.messages.map((message: any): OpenAI.Chat.Completions.ChatCompletionMessageParam => ({
+            role: message.author === 'user' ? 'user' : 'assistant',
+            content: message.content
+        }));
+    } catch (error) {
+        console.warn('Erro ao carregar histórico da conversa:', error);
+        return [];
+    }
+}
+
+/**
  * Gera uma resposta usando a OpenAI API
  */
 export async function generateResponse(userMessage: string): Promise<string> {
     try {
+        // Carrega o histórico da conversa
+        const conversationHistory = loadConversationHistory();
+
+        // Monta as mensagens para a API
+        const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+            {
+                role: "system",
+                content: SYSTEM_PROMPT
+            },
+            ...conversationHistory,
+            {
+                role: "user",
+                content: userMessage
+            }
+        ];
+
         const completion = await openai.chat.completions.create({
             model: "gpt-4o",
-            messages: [
-                {
-                    role: "system",
-                    content: SYSTEM_PROMPT
-                },
-                {
-                    role: "user",
-                    content: userMessage
-                }
-            ],
+            messages: messages,
             max_tokens: 1000,
             temperature: 0.7,
         });
