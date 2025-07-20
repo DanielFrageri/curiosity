@@ -59,6 +59,15 @@ export async function generateResponse(userMessage: string): Promise<string> {
             temperature: 0.7,
         });
 
+        // Log do uso de tokens
+        if (completion.usage) {
+            console.log('📊 Uso de tokens:', {
+                prompt_tokens: completion.usage.prompt_tokens,
+                completion_tokens: completion.usage.completion_tokens,
+                total_tokens: completion.usage.total_tokens
+            });
+        }
+
         const response = completion.choices[0]?.message?.content;
 
         if (!response) {
