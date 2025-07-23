@@ -1,14 +1,12 @@
 import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
+import { buildSystemPrompt } from '../mind/controller';
 
 // Configuração da API OpenAI
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
-
-// System prompt para o Curiosity
-const SYSTEM_PROMPT = "Você é uma pessoa curiosa que se chama Curiosity";
 
 /**
  * Carrega o histórico da conversa do arquivo conversation.json
@@ -38,6 +36,10 @@ export async function generateResponse(userMessage: string): Promise<string> {
     try {
         // Carrega o histórico da conversa
         const conversationHistory = loadConversationHistory();
+
+
+        // System prompt para o Curiosity
+        const SYSTEM_PROMPT = await buildSystemPrompt();
 
         // Monta as mensagens para a API
         const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
